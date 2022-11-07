@@ -68,7 +68,11 @@ public class ChatClient extends AbstractClient
   {
     try
     {
-      sendToServer(message);
+    	if (message.startsWith("#")) {
+    		handleCommand(message.substring(1));
+    	} else {
+    		sendToServer(message);
+    	}
     }
     catch(IOException e)
     {
@@ -77,6 +81,59 @@ public class ChatClient extends AbstractClient
       quit();
     }
   }
+  
+  private void handleCommand(String command) {
+	  if (command.startsWith("sethost")) {
+		  if (isConnected()) {
+			  clientUI.display("Cannot set host while logged on.");
+		  } else {
+			  setHost(command.substring(command.indexOf(' ')+1));
+		  }
+	  } else if (command.startsWith("setport")) {
+		  if (isConnected()) {
+			  clientUI.display("Cannot set port while logged on.");
+		  } else {
+			  setPort(Integer.parseInt(command.substring(command.indexOf(' ')+1)));
+		  }
+	  } else {
+	  
+		  switch (command) {
+		  case "quit":
+			  quit();
+			  break;
+			  
+		  case "logoff":
+			  try {
+				  closeConnection();
+			  } catch (IOException e) {}
+			  break;
+			  
+		  case "login":
+			  if (isConnected()) {
+				  clientUI.display("Already connected");
+			  } else {
+				  try {
+					  openConnection();
+				  } catch (IOException e) {}
+			  }
+			  break;
+			  
+		  case "gethost":
+			  clientUI.display(getHost());
+			  break;
+			  
+		  case "getport":
+			  clientUI.display(String.valueOf(getPort()));
+			  break;
+			  
+		  default:
+			  clientUI.display("Command " + command + " not found");
+			  break;
+		  }
+	  }
+	  
+}
+	  
   
   /**
    * This method terminates the client.
@@ -90,5 +147,28 @@ public class ChatClient extends AbstractClient
     catch(IOException e) {}
     System.exit(0);
   }
+  
+  /**
+	 * Implements hook method called each time an exception is thrown by the client's
+	 * thread that is waiting for messages from the server.
+	 * 
+	 * @param exception
+	 *            the exception raised.
+	 */
+  	@Override
+	protected void connectionException(Exception exception) {
+  		clientUI.display("The server has shut down.");
+  		System.exit(0);
+	}
+  	
+  	/**
+	 * Implements hook method called after the connection has been closed. The default
+	 * implementation does nothing.
+	 */
+  	@Override
+	protected void connectionClosed() {
+		clientUI.display("Connection closed.");
+		//System.exit(0);
+	}
 }
 //End of ChatClient class
